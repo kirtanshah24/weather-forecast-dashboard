@@ -2,79 +2,88 @@
 import requests
 from dotenv import load_dotenv
 import os
+import time
 
-# Load environment variables
 load_dotenv()
-
 API_KEY = os.getenv("WEATHER_API_KEY")
 BASE_URL = "http://api.weatherapi.com/v1"
 
-def get_current_weather(city: str):
-    """
-    Fetch current weather for a city using WeatherAPI
-    Returns dict with weather data or None if error
-    """
-    if not city.strip():
-        return None
-
-    url = f"{BASE_URL}/current.json"
-    params = {
-        "key": API_KEY,
-        "q": city.strip()
-    }
-
-    try:
-        response = requests.get(url, params=params, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            return {
-                "city": data["location"]["name"],
-                "region": data["location"]["region"],
-                "country": data["location"]["country"],
-                "temp_c": data["current"]["temp_c"],
-                "humidity": data["current"]["humidity"],
-                "wind_kph": data["current"]["wind_kph"],
-                "condition": data["current"]["condition"]["text"],
-                "icon": f"https:{data['current']['condition']['icon']}",
-                "feels_like_c": data["current"]["feelslike_c"]
-            }
-        else:
-            error_msg = response.json().get("error", {}).get("message", "Unknown error")
-            return {"error": error_msg}
-    except requests.exceptions.RequestException as e:
-        return {"error": f"Network error: {str(e)}"}
-    except Exception as e:
-        return {"error": f"Unexpected error: {str(e)}"}
-    
-def search_cities(query: str, limit: int = 5):
-    """
-    Search cities with autocomplete using WeatherAPI
-    Returns list of city suggestions
-    """
-    if not query.strip() or len(query.strip()) < 2:
+def search_cities(query: str, limit: int = 6):
+    if not query or len(query.strip()) < 2:
+        return []
+    if not _is_valid_input(query):
         return []
 
     url = f"{BASE_URL}/search.json"
-    params = {
-        "key": API_KEY,
-        "q": query.strip()
-    }
+    params = {"key": API_KEY, "q": query.strip()}
 
+    return _make_request(url, params, is_search=True)[:limit]
+
+def get_current_weather(city: str):
+    if not city or not _is_valid_input(city):
+        return {"error": "Invalid city name. Use letters and spaces only."}
+
+    url = f"{BASE_URL}/current.json"
+    params = {"key": API_KEY, "q": city.strip()}
+
+    return _make_request(url, params)
+
+# === PRIVATE HELPERS ===
+def _is_valid_input(text: str) -> bool:
+    """Allow only letters, spaces, commas, hyphens"""
+    import re
+    return bool(re.match(r"^[a-zA-Z\s,\-\.]+$", text.strip()))
+
+def _make_request(url: str, params: dict, is_search: bool = False, retries: int = 2):
+    """Centralized request with retry, timeout, rate limit handling"""
+    for attempt in range(retries + 1):
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            
+            if response.status_code == 200:
+                return response.json() if is_search else _parse_current_weather(response.json())
+            
+            elif response.status_code == 429:
+                wait = 2 ** attempt
+                if attempt < retries:
+                    time.sleep(wait)
+                    continue
+                return {"error": "Rate limit exceeded. Please try again in a minute."}
+            
+            elif response.status_code == 400:
+                msg = response.json().get("error", {}).get("message", "Bad request")
+                return {"error": msg}
+            
+            else:
+                return {"error": f"API error: {response.status_code}"}
+
+        except requests.exceptions.Timeout:
+            if attempt < retries:
+                time.sleep(1)
+                continue
+            return {"error": "Request timed out. Check your internet."}
+        
+        except requests.exceptions.ConnectionError:
+            return {"error": "No internet connection."}
+        
+        except Exception as e:
+            return {"error": "Something went wrong. Please try again."}
+    
+    return {"error": "Failed after multiple attempts."}
+
+def _parse_current_weather(data: dict) -> dict:
+    """Safely extract weather data"""
     try:
-        response = requests.get(url, params=params, timeout=10)
-        if response.status_code == 200:
-            results = response.json()
-            # Return formatted list: "City, Region, Country"
-            return [
-                {
-                    "name": f"{r['name']}, {r.get('region', '')}, {r['country']}".strip(", "),
-                    "id": r["id"],
-                    "lat": r["lat"],
-                    "lon": r["lon"]
-                }
-                for r in results[:limit]
-            ]
-        else:
-            return []
-    except:
-        return []    
+        return {
+            "city": data["location"]["name"],
+            "region": data["location"]["region"],
+            "country": data["location"]["country"],
+            "temp_c": data["current"]["temp_c"],
+            "feels_like_c": data["current"]["feelslike_c"],
+            "humidity": data["current"]["humidity"],
+            "wind_kph": data["current"]["wind_kph"],
+            "condition": data["current"]["condition"]["text"],
+            "icon": data["current"]["condition"]["icon"]
+        }
+    except KeyError:
+        return {"error": "Incomplete data from API."}
