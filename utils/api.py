@@ -45,5 +45,3 @@ def get_current_weather(city: str):
         return {"error": f"Network error: {str(e)}"}
     except Exception as e:
         return {"error": f"Unexpected error: {str(e)}"}
-    
-    
