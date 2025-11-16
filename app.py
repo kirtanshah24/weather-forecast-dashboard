@@ -10,8 +10,10 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# === TITLE ===
-st.title("cloud Vayu")
+# PORT : 8501
+
+# App title
+st.title("☁️ Vayu the Weather App")
 st.subheader("Real-time Weather Dashboard")
 
 # === SESSION STATE ===
@@ -126,4 +128,4 @@ else:
 
 # === FOOTER ===
 st.markdown("---")
-st.caption("Built with love using Streamlit • Powered by WeatherAPI")
+st.caption("Built with ❤️ using Streamlit | Powered by WeatherAPI")
