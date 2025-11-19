@@ -1,16 +1,16 @@
 import pytest
 from utils.api import get_current_weather, search_cities
 
+TEST_KEY = "TEST_KEY"
+
 def test_search_cities_success(requests_mock):
-    mock_response = {
-        "results": [
-            {"name": "Mumbai"},
-            {"name": "Mumbai City"}
-        ]
-    }
+    mock_response = [
+        {"name": "Mumbai"},
+        {"name": "Mumbai City"}
+    ]
 
     requests_mock.get(
-        "https://api.weatherapi.com/v1/search.json?q=Mumbai&key=619f0dea8fc24a38beb115843251211",
+        f"https://api.weatherapi.com/v1/search.json?key={TEST_KEY}&q=Mumbai",
         json=mock_response,
         status_code=200
     )
@@ -33,7 +33,7 @@ def test_get_current_weather_success(requests_mock):
     }
 
     requests_mock.get(
-        "https://api.weatherapi.com/v1/current.json?q=London&key=619f0dea8fc24a38beb115843251211",
+        f"https://api.weatherapi.com/v1/current.json?key={TEST_KEY}&q=London",
         json=mock_response,
         status_code=200
     )
@@ -46,7 +46,7 @@ def test_get_current_weather_success(requests_mock):
 
 def test_get_current_weather_invalid_city(requests_mock):
     requests_mock.get(
-        "https://api.weatherapi.com/v1/current.json?q=InvalidCity&key=619f0dea8fc24a38beb115843251211",
+        f"https://api.weatherapi.com/v1/current.json?key={TEST_KEY}&q=InvalidCity",
         status_code=400,
         json={"error": {"message": "No matching location found"}}
     )
