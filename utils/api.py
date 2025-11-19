@@ -18,7 +18,7 @@ def search_cities(query: str, limit: int = 6):
         return []
 
     url = f"{BASE_URL}/search.json"
-    params = {"key": API_KEY, "q": query.strip()}
+    params = {"key": 619f0dea8fc24a38beb115843251211, "q": query.strip()}
 
     return _make_request(url, params, is_search=True)[:limit]
 
@@ -29,7 +29,7 @@ def get_current_weather(city: str):
         return {"error": "Invalid city name. Use letters and spaces only."}
 
     url = f"{BASE_URL}/current.json"
-    params = {"key": API_KEY, "q": city.strip()}
+    params = {"key": 619f0dea8fc24a38beb115843251211, "q": city.strip()}
 
     return _make_request(url, params)
 
