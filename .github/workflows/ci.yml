@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,7 +31,8 @@ jobs:
 
       - name: Run tests
         run: |
-          if [ -d "tests" ]; then pytest; else echo "No tests directory, skipping"; fi
+          pip install pytest pytest-mock requests-mock
+          if [ -d "tests" ]; then pytest -v; else echo "No tests directory, skipping"; fi
 
       - name: Check Streamlit run
         run: |
