@@ -10,8 +10,10 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# === TITLE ===
-st.title("cloud Vayu")
+# PORT : 8501
+
+# App title
+st.title("☁️ Vayu the Weather App")
 st.subheader("Real-time Weather Dashboard")
 
 # === SESSION STATE ===
@@ -60,8 +62,10 @@ else:
 if st.session_state.show_weather and st.session_state.selected_city:
     city = st.session_state.selected_city
 
-    # Loading skeleton
-    with st.container():
+    # === LOADING SKELETON PLACEHOLDER ===
+    skeleton_placeholder = st.empty()
+
+    with skeleton_placeholder.container():
         col1, col2 = st.columns([1, 3])
         with col1:
             st.markdown("<div style='width:120px; height:120px; background:#f0f0f0; border-radius:12px;'></div>", unsafe_allow_html=True)
@@ -69,23 +73,27 @@ if st.session_state.show_weather and st.session_state.selected_city:
             st.markdown("### Loading city...")
             st.markdown("#### Loading condition...")
 
+    # === FETCH WEATHER ===
     with st.spinner(f"Fetching weather for **{city}**..."):
         weather_data = get_current_weather(city)
 
-    # Clear skeleton
-    st.empty()
+    # === CLEAR SKELETON & SHOW WEATHER ===
+    skeleton_placeholder.empty()
 
     if "error" not in weather_data:
-        # SUCCESS
         col1, col2 = st.columns([1, 3])
         with col1:
-            st.image(weather_data["icon"], width=120)
+            icon_url = weather_data["icon"]
+            if icon_url.startswith("//"):
+                icon_url = "https:" + icon_url
+            st.image(icon_url, width=120)
         with col2:
             st.markdown(f"""
             ### {weather_data['city']}, {weather_data['region']}
             #### {weather_data['condition']}
             """)
 
+        # Metrics for weather
         m1, m2, m3 = st.columns(3)
         with m1: st.metric("Temperature", f"{weather_data['temp_c']}°C")
         with m2: st.metric("Feels Like", f"{weather_data['feels_like_c']}°C")
@@ -99,7 +107,6 @@ if st.session_state.show_weather and st.session_state.selected_city:
             st.rerun()
 
     else:
-        # ERROR HANDLING
         error = weather_data["error"]
         if "rate limit" in error.lower():
             st.error("Rate limit exceeded. Please try again in a minute.")
@@ -122,4 +129,4 @@ else:
 
 # === FOOTER ===
 st.markdown("---")
-st.caption("Built with love using Streamlit • Powered by WeatherAPI")
+st.caption("Built with love using Streamlit | Powered by WeatherAPI")
