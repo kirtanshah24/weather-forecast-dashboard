@@ -4,8 +4,9 @@ import streamlit as st
 import time
 import os
 
-load_dotenv()
-API_KEY = os.getenv("WEATHER_API_KEY")
+# load_dotenv()
+# API_KEY = os.getenv("WEATHER_API_KEY")
+API_KEY = "619f0dea8fc24a38beb115843251211"
 BASE_URL = "http://api.weatherapi.com/v1"
 
 
