@@ -2,6 +2,8 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+import os
+from PIL import Image
 from utils.api import get_current_weather, get_forecast_weather, search_cities
 
 # === PAGE CONFIG ===
@@ -10,6 +12,17 @@ st.set_page_config(
     page_icon="cloud",
     layout="centered"
 )
+
+# === DEFAULT ICON PATH ===
+DEFAULT_ICON_PATH = "assets/icons/default.png"
+
+# Ensure default icon exists
+if not os.path.exists(DEFAULT_ICON_PATH):
+    st.error("Default icon missing! Please add assets/icons/default.png")
+    st.stop()
+
+# Load default icon once
+DEFAULT_ICON = Image.open(DEFAULT_ICON_PATH)
 
 # === TITLE ===
 st.title("Vayu – Your Weather Companion")
@@ -55,28 +68,46 @@ if search_query and len(search_query) >= 2:
 else:
     st.session_state.show_weather = False
 
-# === MAIN WEATHER DISPLAY ===
+# === ICON HELPER FUNCTION ===
+@st.cache_data(ttl=3600)
+def get_icon_with_fallback(icon_url: str):
+    """Returns PIL Image with fallback to default cloud"""
+    if not icon_url:
+        return DEFAULT_ICON
+    
+    # Fix protocol
+    if icon_url.startswith("//"):
+        icon_url = "https:" + icon_url
+
+    try:
+        import requests
+        from io import BytesIO
+        response = requests.get(icon_url, timeout=5)
+        if response.status_code == 200:
+            return Image.open(BytesIO(response.content))
+    except:
+        pass  # Silently fall back
+    return DEFAULT_ICON
+
+# === MAIN DISPLAY ===
 if st.session_state.show_weather and st.session_state.selected_city:
     city = st.session_state.selected_city
 
-    # Skeleton
     placeholder = st.empty()
     with placeholder.container():
         col1, col2 = st.columns([1, 4])
         with col1:
-            st.markdown("<div style='width:140px;height:140px;background:#eee;border-radius:50%;'></div>", unsafe_allow_html=True)
+            st.image(DEFAULT_ICON, width=140)
         with col2:
             st.markdown("### Loading weather data...")
             st.markdown("#### Please wait...")
 
-    # Fetch data
-    with st.spinner("Fetching current & forecast data..."):
-        current_raw = get_current_weather(city)      # ← raw response
-        forecast_raw = get_forecast_weather(city)    # ← raw response
+    with st.spinner("Fetching weather data..."):
+        current_raw = get_current_weather(city)
+        forecast_raw = get_forecast_weather(city)
 
     placeholder.empty()
 
-    # === CHECK FOR ERRORS ===
     if "error" in current_raw:
         st.error(f"Current Weather Error: {current_raw['error']}")
         st.stop()
@@ -84,51 +115,46 @@ if st.session_state.show_weather and st.session_state.selected_city:
         st.error(f"Forecast Error: {forecast_raw['error']}")
         st.stop()
 
-    # === EXTRACT CURRENT WEATHER ===
+    # === CURRENT WEATHER ===
     loc = current_raw["location"]
     cur = current_raw["current"]
-
     city_name = loc["name"]
     region = loc.get("region", "")
-    country = loc["country"]
-    temp_c = cur["temp_c"]
-    feels_like = cur["feelslike_c"]
-    humidity = cur["humidity"]
-    wind_kph = cur["wind_kph"]
     condition = cur["condition"]["text"]
-    icon_url = "https:" + cur["condition"]["icon"] if cur["condition"]["icon"].startswith("//") else cur["condition"]["icon"]
+    icon_url = cur["condition"]["icon"]
 
-    # === DISPLAY CURRENT WEATHER ===
     st.markdown(f"## {city_name}, {region} • {condition}")
 
     col1, col2 = st.columns([1, 4])
     with col1:
-        st.image(icon_url, width=140)
+        icon_img = get_icon_with_fallback(icon_url)
+        st.image(icon_img, width=140)
     with col2:
-        st.markdown(f"### {temp_c}°C")
-        st.caption(f"Feels like {feels_like}°C")
+        st.markdown(f"### {cur['temp_c']}°C")
+        st.caption(f"Feels like {cur['feelslike_c']}°C")
 
     c1, c2, c3, c4 = st.columns(4)
-    with c1: st.metric("Humidity", f"{humidity}%")
-    with c2: st.metric("Wind", f"{wind_kph} kph")
-    with c3: st.metric("Feels Like", f"{feels_like}°C")
+    with c1: st.metric("Humidity", f"{cur['humidity']}%")
+    with c2: st.metric("Wind", f"{cur['wind_kph']} kph")
+    with c3: st.metric("Feels Like", f"{cur['feelslike_c']}°C")
     with c4: st.metric("Location", f"{city_name}")
 
     st.markdown("---")
 
     # === 5-DAY FORECAST ===
     st.subheader("5-Day Forecast")
-
     forecast_list = forecast_raw["forecast"]["forecastday"]
+
     for day in forecast_list:
         d = day["day"]
         date_str = day["date"]
         day_name = pd.to_datetime(date_str).strftime("%A")[:3]
-        icon = "https:" + d["condition"]["icon"] if d["condition"]["icon"].startswith("//") else d["condition"]["icon"]
+        icon_url = d["condition"]["icon"]
 
         cols = st.columns([1, 2, 3, 2])
         with cols[0]:
-            st.image(icon, width=60)
+            icon_img = get_icon_with_fallback(icon_url)
+            st.image(icon_img, width=60)
         with cols[1]:
             st.markdown(f"**{day_name}**")
             st.caption(date_str[5:])
@@ -142,31 +168,7 @@ if st.session_state.show_weather and st.session_state.selected_city:
 
     st.markdown("---")
 
-    # # === TEMPERATURE CHART ===
-    # st.subheader("Temperature Trend (5 Days)")
-
-    # chart_df = pd.DataFrame([
-    #     {
-    #         "Date": pd.to_datetime(day["date"]).strftime("%b %d"),
-    #         "Max °C": day["day"]["maxtemp_c"],
-    #         "Min °C": day["day"]["mintemp_c"],
-    #         "Avg °C": day["day"]["avgtemp_c"]
-    #     }
-    #     for day in forecast_list
-    # ])
-
-    # chart = alt.Chart(chart_df).transform_fold(
-    #     ["Max °C", "Min °C", "Avg °C"]
-    # ).mark_line(point=True).encode(
-    #     x="Date:T",
-    #     y="value:Q",
-    #     color="key:N",
-    #     tooltip=["Date", "key", "value"]
-    # ).properties(height=320)
-
-    # st.altair_chart(chart, use_container_width=True)
-
-        # === TEMPERATURE CHART (FIXED & BEAUTIFUL) ===
+    # === TEMPERATURE CHART (FIXED) ===
     st.subheader("Temperature Trend (5 Days)")
 
     chart_data = []
@@ -177,24 +179,14 @@ if st.session_state.show_weather and st.session_state.selected_city:
             {"Date": date_fmt, "Temperature (°C)": day["day"]["mintemp_c"], "Type": "Min"},
             {"Date": date_fmt, "Temperature (°C)": day["day"]["avgtemp_c"], "Type": "Avg"}
         ])
-
     df_chart = pd.DataFrame(chart_data)
 
-    chart = alt.Chart(df_chart).mark_line(
-        point=alt.OverlayMarkDef(size=100)
-    ).encode(
+    chart = alt.Chart(df_chart).mark_line(point=alt.OverlayMarkDef(size=100)).encode(
         x=alt.X("Date:N", title="Date", sort=None),
         y=alt.Y("Temperature (°C):Q", scale=alt.Scale(zero=False)),
         color=alt.Color("Type:N", legend=alt.Legend(title="Temperature")),
         tooltip=["Date", "Type", "Temperature (°C)"]
-    ).properties(
-        height=340,
-        width="container"
-    ).configure_point(
-        size=120
-    ).configure_legend(
-        orient="top"
-    )
+    ).properties(height=340).configure_legend(orient="top")
 
     st.altair_chart(chart, use_container_width=True)
 
@@ -212,6 +204,5 @@ if st.session_state.show_weather and st.session_state.selected_city:
 else:
     st.info("Start typing a city name above to see weather & forecast!")
 
-# === FOOTER ===
 st.markdown("---")
 st.caption("Vayu • Built with love using Streamlit • Powered by WeatherAPI")
