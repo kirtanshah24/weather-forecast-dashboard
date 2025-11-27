@@ -143,7 +143,7 @@ if st.session_state.show_weather and st.session_state.selected_city:
     st.markdown("---")
 
     # # === TEMPERATURE CHART ===
-    # st.subheader("Temperature Trend (5 Days)")
+    # st.subheader("Temperature Trend ")
 
     # chart_df = pd.DataFrame([
     #     {
@@ -167,7 +167,7 @@ if st.session_state.show_weather and st.session_state.selected_city:
     # st.altair_chart(chart, use_container_width=True)
 
         # === TEMPERATURE CHART (FIXED & BEAUTIFUL) ===
-    st.subheader("Temperature Trend (5 Days)")
+    st.subheader("Temperature Trend ")
 
     chart_data = []
     for day in forecast_list:
