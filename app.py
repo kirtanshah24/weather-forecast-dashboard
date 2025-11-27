@@ -130,7 +130,7 @@ if st.session_state.show_weather and st.session_state.selected_city:
         st.image(icon_url, width=140)
     with col2:
         st.markdown(f"### {temp_c}°C")
-        st.caption(f"Feels like {feels_like}°C")
+        # st.caption(f"Feels like {feels_like}°C")
 
     c1, c2, c3, c4 = st.columns(4)
     with c1: st.metric("Humidity", f"{humidity}%")
