@@ -86,19 +86,19 @@ if st.session_state.show_weather and st.session_state.selected_city:
 
 #     # === EXTRACT CURRENT WEATHER ===
 # === EXTRACT CURRENT WEATHER ===
-city_name = current_raw["city"]
-region = current_raw["region"]
-temp_c = current_raw["temp_c"]
-feels_like = current_raw["feels_like"]
-humidity = current_raw["humidity"]
-wind_kph = current_raw["wind_kph"]
-condition = current_raw["condition"]
-
-icon_url = (
-    "https:" + current_raw["icon"]
-    if current_raw["icon"].startswith("//")
-    else current_raw["icon"]
-)
+    city_name = current_raw["city"]
+    region = current_raw["region"]
+    temp_c = current_raw["temp_c"]
+    feels_like = current_raw["feels_like"]
+    humidity = current_raw["humidity"]
+    wind_kph = current_raw["wind_kph"]
+    condition = current_raw["condition"]
+    
+    icon_url = (
+        "https:" + current_raw["icon"]
+        if current_raw["icon"].startswith("//")
+        else current_raw["icon"]
+    )
 
 
     
