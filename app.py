@@ -117,7 +117,7 @@ if st.session_state.show_weather and st.session_state.selected_city:
     st.markdown("---")
 
     # === 5-DAY FORECAST ===
-    st.subheader("5-Day Forecast")
+    st.subheader("3-Day Forecast")
 
     forecast_list = forecast_raw["forecast"]["forecastday"]
     for day in forecast_list:
