@@ -4,13 +4,12 @@ from utils.api import get_current_weather, search_cities
 
 def test_search_cities_success(requests_mock):
     """Test successful city search API call."""
-    
+
     mock_response = [
         {"name": "Mumbai"},
         {"name": "Mumbai City"}
     ]
 
-    # Mock endpoint without query string (params ignored)
     requests_mock.get(
         "https://api.weatherapi.com/v1/search.json",
         json=mock_response,
@@ -25,7 +24,7 @@ def test_search_cities_success(requests_mock):
 
 
 def test_get_current_weather_success(requests_mock):
-    """Test successful weather data fetch and formatted response."""
+    """Test normalized formatted weather response."""
 
     mock_response = {
         "location": {"name": "London", "region": "London"},
@@ -49,7 +48,7 @@ def test_get_current_weather_success(requests_mock):
 
     weather = get_current_weather("London")
 
-    # Expected normalized keys
+    assert isinstance(weather, dict)
     assert weather["city"] == "London"
     assert weather["temp_c"] == 20
     assert weather["condition"] == "Cloudy"
@@ -57,7 +56,7 @@ def test_get_current_weather_success(requests_mock):
 
 
 def test_get_current_weather_invalid_city(requests_mock):
-    """Test handling of invalid city API response."""
+    """Test graceful handling of invalid location."""
 
     requests_mock.get(
         "https://api.weatherapi.com/v1/current.json",
