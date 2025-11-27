@@ -135,7 +135,7 @@ if st.session_state.show_weather and st.session_state.selected_city:
     c1, c2, c3, c4 = st.columns(4)
     with c1: st.metric("Humidity", f"{humidity}%")
     with c2: st.metric("Wind", f"{wind_kph} kph")
-    with c3: st.metric("Feels Like", f"{feels_like}°C")
+    # with c3: st.metric("Feels Like", f"{feels_like}°C")
     with c4: st.metric("Location", f"{city_name}")
 
     st.markdown("---")
