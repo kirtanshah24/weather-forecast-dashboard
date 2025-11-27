@@ -84,19 +84,43 @@ if st.session_state.show_weather and st.session_state.selected_city:
         st.error(f"Forecast Error: {forecast_raw['error']}")
         st.stop()
 
-    # === EXTRACT CURRENT WEATHER ===
-    loc = current_raw["location"]
-    cur = current_raw["current"]
+#     # === EXTRACT CURRENT WEATHER ===
+# === EXTRACT CURRENT WEATHER ===
+city_name = current_raw["city"]
+region = current_raw["region"]
+temp_c = current_raw["temp_c"]
+feels_like = current_raw["feels_like"]
+humidity = current_raw["humidity"]
+wind_kph = current_raw["wind_kph"]
+condition = current_raw["condition"]
 
-    city_name = loc["name"]
-    region = loc.get("region", "")
-    country = loc["country"]
-    temp_c = cur["temp_c"]
-    feels_like = cur["feelslike_c"]
-    humidity = cur["humidity"]
-    wind_kph = cur["wind_kph"]
-    condition = cur["condition"]["text"]
-    icon_url = "https:" + cur["condition"]["icon"] if cur["condition"]["icon"].startswith("//") else cur["condition"]["icon"]
+icon_url = (
+    "https:" + current_raw["icon"]
+    if current_raw["icon"].startswith("//")
+    else current_raw["icon"]
+)
+
+
+    
+#     # loc = current_raw["location"]
+#     # cur = current_raw["current"]
+
+#     city_name = current_raw["city"]
+# region = current_raw["region"]
+# temp_c = current_raw["temp_c"]
+# condition = current_raw["condition"]
+# icon_url = "https:" + current_raw["icon"]
+
+
+#     city_name = loc["name"]
+#     region = loc.get("region", "")
+#     country = loc["country"]
+#     temp_c = cur["temp_c"]
+#     feels_like = cur["feelslike_c"]
+#     humidity = cur["humidity"]
+#     wind_kph = cur["wind_kph"]
+#     condition = cur["condition"]["text"]
+#     icon_url = "https:" + cur["condition"]["icon"] if cur["condition"]["icon"].startswith("//") else cur["condition"]["icon"]
 
     # === DISPLAY CURRENT WEATHER ===
     st.markdown(f"## {city_name}, {region} • {condition}")
