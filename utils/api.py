@@ -7,7 +7,7 @@ from typing import List, Dict
 
 # Hardcoded API key (as per your choice)
 API_KEY = "619f0dea8fc24a38beb115843251211"
-BASE_URL = "http://api.weatherapi.com/v1"
+BASE_URL = "https://api.weatherapi.com/v1"
 
 # Simple in-memory cache to reduce API calls
 _cache = {}
