@@ -1,17 +1,16 @@
 import pytest
 from utils.api import get_current_weather, search_cities
 
-TEST_KEY = "TEST_KEY"
-
 
 def test_search_cities_success(requests_mock):
-    # Mocked API response
+    """Test successful city search API call."""
+    
     mock_response = [
         {"name": "Mumbai"},
         {"name": "Mumbai City"}
     ]
 
-    # Mock ONLY the base endpoint — ignore params
+    # Mock endpoint without query string (params ignored)
     requests_mock.get(
         "https://api.weatherapi.com/v1/search.json",
         json=mock_response,
@@ -21,11 +20,13 @@ def test_search_cities_success(requests_mock):
     result = search_cities("Mumbai")
 
     assert isinstance(result, list)
+    assert len(result) > 0
     assert result[0]["name"] == "Mumbai"
 
 
 def test_get_current_weather_success(requests_mock):
-    # Mocked payload representing a valid response
+    """Test successful weather data fetch and formatted response."""
+
     mock_response = {
         "location": {"name": "London", "region": "London"},
         "current": {
@@ -48,14 +49,16 @@ def test_get_current_weather_success(requests_mock):
 
     weather = get_current_weather("London")
 
-    # Validate processed result format
+    # Expected normalized keys
     assert weather["city"] == "London"
     assert weather["temp_c"] == 20
     assert weather["condition"] == "Cloudy"
+    assert "icon" in weather
 
 
 def test_get_current_weather_invalid_city(requests_mock):
-    # Simulate WeatherAPI error response
+    """Test handling of invalid city API response."""
+
     requests_mock.get(
         "https://api.weatherapi.com/v1/current.json",
         status_code=400,
