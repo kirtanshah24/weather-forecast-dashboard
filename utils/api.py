@@ -1,4 +1,4 @@
-# utils/api.py
+import os
 import requests
 import time
 import os
@@ -110,10 +110,13 @@ def _make_request(url: str, params: dict, is_search: bool = False, retries: int 
 
 def _parse_current_weather(data: dict) -> dict:
     try:
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+
         return {
             "city": data["location"]["name"],
             "region": data["location"]["region"],
-            "country": data["location"]["country"],
             "temp_c": data["current"]["temp_c"],
             "feels_like_c": data["current"]["feelslike_c"],
             "humidity": data["current"]["humidity"],
