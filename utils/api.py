@@ -27,6 +27,20 @@ def search_cities(query: str, limit: int = 6) -> List[Dict]:
     _cache[cache_key] = result[:limit] if isinstance(result, list) else []
     return _cache[cache_key]
 
+# def get_current_weather(city: str) -> Dict:
+#     if not city or not _is_valid_input(city):
+#         return {"error": "Invalid city name."}
+
+#     cache_key = f"current_{city.lower()}"
+#     if cache_key in _cache:
+#         return _cache[cache_key]
+
+#     url = f"{BASE_URL}/current.json"
+#     params = {"key": API_KEY, "q": city.strip()}
+#     result = _make_request(url, params)
+#     _cache[cache_key] = result
+#     return result
+
 def get_current_weather(city: str) -> Dict:
     if not city or not _is_valid_input(city):
         return {"error": "Invalid city name."}
@@ -38,8 +52,14 @@ def get_current_weather(city: str) -> Dict:
     url = f"{BASE_URL}/current.json"
     params = {"key": API_KEY, "q": city.strip()}
     result = _make_request(url, params)
+
+    # NEW: Format result using parser
+    if "error" not in result:
+        result = _parse_current_weather(result)
+
     _cache[cache_key] = result
     return result
+
 
 def get_forecast_weather(city: str, days: int = 5) :
     """Returns 5-day forecast with daily summary"""
