@@ -89,7 +89,7 @@ if st.session_state.show_weather and st.session_state.selected_city:
     city_name = current_raw["city"]
     region = current_raw["region"]
     temp_c = current_raw["temp_c"]
-    feels_like = current_raw["feels_like"]
+    # feels_like = current_raw["feels_like"]
     humidity = current_raw["humidity"]
     wind_kph = current_raw["wind_kph"]
     condition = current_raw["condition"]
