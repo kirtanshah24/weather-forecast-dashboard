@@ -240,19 +240,13 @@
 # st.markdown("---")
 # st.caption("Vayu • Built with love using Streamlit • Powered by WeatherAPI")
 
-
-# app.py
 import streamlit as st
 import pandas as pd
 import altair as alt
 from utils.api import get_current_weather, get_forecast_weather, search_cities
 
 # === PAGE CONFIG ===
-st.set_page_config(
-    page_title="Vayu - Weather Dashboard",
-    page_icon="☁️",
-    layout="centered"
-)
+st.set_page_config(page_title="Vayu - Weather Dashboard", page_icon="☁️", layout="centered")
 
 # === TITLE ===
 st.title("🌤️ Vayu – Your Weather Companion")
@@ -264,11 +258,7 @@ for key in ["selected_city", "show_weather", "last_search"]:
         st.session_state[key] = "" if key != "show_weather" else False
 
 # === SEARCH INPUT ===
-search_query = st.text_input(
-    "Search for a city:",
-    placeholder="e.g., Mumbai, Delhi, Tokyo",
-    help="Type at least 2 letters"
-)
+search_query = st.text_input("Search for a city:", placeholder="e.g., Mumbai, Delhi, Tokyo")
 
 if search_query != st.session_state.last_search:
     st.session_state.show_weather = False
@@ -280,47 +270,37 @@ if search_query and len(search_query) >= 2:
         suggestions = search_cities(search_query)
 
     if suggestions:
-        city_names = [s["name"] for s in suggestions]
-        selected = st.selectbox(
-            "Select a city:",
-            [""] + city_names,
-            format_func=lambda x: "Choose a city" if not x else x
-        )
+        selected = st.selectbox("Select a city:", [""] + [s["name"] for s in suggestions])
 
         if selected:
             st.session_state.selected_city = selected
             st.session_state.show_weather = True
             st.success(f"Selected: **{selected}**")
-    else:
-        st.warning("No matching cities found.")
+else:
+    st.session_state.show_weather = False
 
-# === MAIN VIEW ===
+
+# === MAIN WEATHER CONTENT ===
 if st.session_state.show_weather and st.session_state.selected_city:
     city = st.session_state.selected_city
 
-    placeholder = st.empty()
-    with placeholder.container():
-        st.write("⏳ Loading weather data...")
-
-    with st.spinner("Fetching weather..."):
+    with st.spinner("Fetching weather data..."):
         current = get_current_weather(city)
         forecast = get_forecast_weather(city)
 
-    placeholder.empty()
-
-    # ERROR HANDLING
+    # --- CHECK FOR ERRORS ---
     if "error" in current:
-        st.error(f"❌ Current Weather Error: {current['error']}")
+        st.error(current["error"])
         st.stop()
     if "error" in forecast:
-        st.error(f"❌ Forecast Error: {forecast['error']}")
+        st.error(forecast["error"])
         st.stop()
 
-    # === CURRENT WEATHER DISPLAY ===
+    # ===== CURRENT WEATHER DISPLAY =====
+    icon_url = f"https:{current['icon']}" if current["icon"].startswith("//") else current["icon"]
+
     st.markdown(f"## 📍 {current['city']}, {current['region']}")
     st.markdown(f"### {current['condition']}")
-
-    icon_url = "https:" + current["icon"] if current["icon"].startswith("//") else current["icon"]
 
     col1, col2 = st.columns([1, 4])
     with col1:
@@ -331,58 +311,62 @@ if st.session_state.show_weather and st.session_state.selected_city:
     c1, c2, c3, c4 = st.columns(4)
     with c1: st.metric("Humidity", f"{current['humidity']}%")
     with c2: st.metric("Wind", f"{current['wind_kph']} kph")
-    with c3: st.metric("Feels Like", f"{current['feels_like']}°C")
+
+    # ---- If field doesn't exist in API, skip it safely ----
+    if "feelslike_c" in current:
+        with c3: st.metric("Feels Like", f"{current['feelslike_c']}°C")
+    else:
+        with c3: st.caption("Feels like: N/A")
+
     with c4: st.metric("Region", current["region"])
 
     st.markdown("---")
 
-    # === FORECAST SECTION ===
-    st.subheader("📅 3-Day Weather Forecast")
-    forecast_days = forecast["forecast"]
+    # ===== FORECAST =====
+    st.subheader("📅 3-Day Forecast")
+
+    forecast_days = forecast.get("forecast", [])
 
     for day in forecast_days:
-        icon = "https:" + day["icon"] if day["icon"].startswith("//") else day["icon"]
+        icon = f"https:{day['icon']}" if day["icon"].startswith("//") else day["icon"]
         cols = st.columns([1, 2, 3, 2])
 
-        with cols[0]:
-            st.image(icon, width=50)
-
+        with cols[0]: st.image(icon, width=60)
         with cols[1]:
             st.markdown(f"**{day['day']}**")
             st.caption(day["date"])
-
         with cols[2]:
             st.markdown(f"🌡️ {day['max']}° / {day['min']}°")
             st.caption(day["condition"])
-
         with cols[3]:
-            st.progress(day["rain"] / 100)
-            st.caption(f"Rain: {day['rain']}%")
+            rain = day.get("rain", 0)
+            st.progress(rain / 100)
+            st.caption(f"Rain: {rain}%")
 
     st.markdown("---")
 
-    # --- TEMPERATURE TREND GRAPH ---
+    # ===== TEMPERATURE CHART =====
     st.subheader("📈 Temperature Trend")
 
-    chart_data = pd.DataFrame([
-        {"Date": day["date"], "Type": "High", "Temp": day["max"]} for day in forecast_days
-    ] + [
-        {"Date": day["date"], "Type": "Low", "Temp": day["min"]} for day in forecast_days
-    ])
+    if forecast_days:
+        df_chart = pd.DataFrame([
+            {"Date": day["date"], "Type": label, "Temp": value}
+            for day in forecast_days
+            for label, value in [("High", day["max"]), ("Low", day["min"])]
+        ])
 
-    chart = alt.Chart(chart_data).mark_line(point=True).encode(
-        x="Date:N",
-        y="Temp:Q",
-        color="Type:N",
-        tooltip=["Date:N", "Type:N", "Temp:Q"]
-    ).properties(height=300)
+        chart = alt.Chart(df_chart).mark_line(point=True).encode(
+            x="Date:N",
+            y="Temp:Q",
+            color="Type:N",
+            tooltip=["Date", "Type", "Temp"]
+        ).properties(height=300)
 
-    st.altair_chart(chart, use_container_width=True)
+        st.altair_chart(chart, use_container_width=True)
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🔄 Refresh"):
-            st.rerun()
+        if st.button("🔄 Refresh"): st.rerun()
     with col2:
         if st.button("🆕 New Search"):
             st.session_state.selected_city = ""
@@ -390,9 +374,8 @@ if st.session_state.show_weather and st.session_state.selected_city:
             st.rerun()
 
 else:
-    st.info("⬆ Start by typing a city above to see the weather 🌍")
+    st.info("⬆ Start typing a city above to view weather 🌍")
 
-# === FOOTER ===
 st.markdown("---")
-st.caption("🌦️ Vayu • Built using Streamlit • Powered by WeatherAPI")
+st.caption("🌦️ Vayu • Built with ❤️ using Streamlit • Powered by WeatherAPI")
 
